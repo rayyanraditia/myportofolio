@@ -193,3 +193,14 @@ h1, .brand {
         justify-content: flex-start;
     }
 }
+
+.skills-section h2 {
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+
+.skills-list {
+    display: column; 
+    gap: 1.5rem;
+}

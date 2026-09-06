@@ -193,3 +193,40 @@ h1, .brand {
         justify-content: flex-start;
     }
 }
+
+.skills-section{
+    padding: 4rem 0;
+}
+
+.skill-title{
+    display: inline-block;
+    background-color: var(--ink);
+    color: var(--paper);
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    box-shadow: 5px 5px 0 var(--accent);
+}
+
+.skill-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+.skills-subblock,
+.skill-subblock {
+    background-color: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: 5px 5px 0 var(--accent); 
+}
+
+.card-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--accent-dark);
+    font-weight: 700;
+    text-transform: uppercase;
+}

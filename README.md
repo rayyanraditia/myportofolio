@@ -15,6 +15,7 @@ Ya, saya menggunakan AI, lebih tepatnya Claude AI. Penjelasan lebih lanjutnya di
 
 
 ### Tugas 2
+Penggunaan AI digunakan terutama untuk 3 hal besar, yakni review terkait setiap perubahan yang telah saya lakukan, dimana jika saya menambahkan perubahan besar maka secara rutin sebelum commit saya akan meminta AI untuk review terlebih dahulu, selanjutnya saya menggunakannya untuk membantu pembuatan CSS yang masih belum saya parahmi dan yang terakhir dalam pembuatan testing.
 1. Jelaskan alur yang terjadi ketika pengguna membuka halaman portofolio baru, mulai dari permintaan yang diterima proyek hingga data ditampilkan pada browser. Dalam jawabanmu, jelaskan peran urls.py proyek, urls.py aplikasi, view, model, dan template.
 Ketika pengguna membuka halaman Education, browser mengirim permintaan ke alamat /education/. urls.py proyek meneruskan permintaan ke urls.py aplikasi main. URL aplikasi kemudian memilih view show_education. View mengambil data dari database melalui model Education, lalu memasukkannya ke dalam context dengan nama education_list. Template education.html menggunakan data tersebut untuk menyusun daftar pendidikan. Django mengirimkan HTML yang sudah dihasilkan ke browser untuk ditampilkan.
 

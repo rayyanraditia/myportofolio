@@ -23,7 +23,36 @@
     </header>
 
     <main>
-        
+        <section class = "education-section" id="education">
+            <div class="container">
+                <p class="section-kicker">Perjalanan saya sejauh ini</p>
+                <h1>Education</h1>
+
+                <div class="education-grid">
+                    {% for education in education_list %}
+                    <article class="education-card">
+                        <span class="education-category">
+                            {{ education.get_category_display }}
+                        </span>
+                        <h2>{{ education.title }}</h2>
+                        <p class="education-description">
+                            {{ education.description }}
+                        </p>
+                        {% if education.is_ongoing %}
+                            <p class="education-status">Sedang berlangsung</p>
+                        {% else %}
+                            <p class="education-status">Selesai</p>
+                        {% endif %}
+                    </article>
+                {% empty %}
+                    <p class="empty-state">
+                        Belum ada pengalaman yang ditambahkan.
+                    </p>
+                {% endfor %}
+                    </article>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer class="site-footer">

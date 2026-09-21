@@ -2,8 +2,9 @@ from django.contrib import messages
 from django.core import serializers
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
-from main.forms import ProjectForm
+from main.forms import EducationForm, ProjectForm
 from main.models import Education, Experience, Project
 
 
@@ -92,3 +93,62 @@ def delete_project(request, project_id):
         messages.success(request, "Proyek berhasil dihapus!")
 
     return redirect("main:show_projects")
+
+def create_education(request):
+    form = EducationForm(
+        request.POST if request.method == "POST" else None
+    )
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Pendidikan berhasil ditambahkan!")
+        return redirect("main:show_education")
+
+    context = {
+        "name": "Rayyan Raditia Pramana",
+        "form": form,
+        "page_title": "Tambah Pendidikan",
+        "submit_label": "Tambah Pendidikan",
+    }
+    return render(request, "education_form.html", context)
+
+
+def update_education(request, education_id):
+    education = get_object_or_404(Education, pk=education_id)
+
+    form = EducationForm(
+        request.POST if request.method == "POST" else None,
+        instance=education,
+    )
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Pendidikan berhasil diperbarui!")
+        return redirect("main:show_education")
+
+    context = {
+        "name": "Rayyan Raditia Pramana",
+        "form": form,
+        "page_title": "Edit Pendidikan",
+        "submit_label": "Simpan Perubahan",
+    }
+    return render(request, "education_form.html", context)
+
+
+@require_POST
+def delete_education(request, education_id):
+    education = get_object_or_404(Education, pk=education_id)
+    education.delete()
+
+    messages.success(request, "Pendidikan berhasil dihapus!")
+    return redirect("main:show_education")
+
+
+def get_education_json(request):
+    education_list = Education.objects.all()
+    education_json = serializers.serialize("json", education_list)
+
+    return HttpResponse(
+        education_json,
+        content_type="application/json",
+    )

@@ -5,52 +5,88 @@
 {% endblock meta %}
 
 {% block content %}
-
     <main>
-        <section class = "education-section" id="education">
+        <section class="education-section" id="education">
             <div class="container">
                 <p class="section-kicker">Perjalanan saya sejauh ini</p>
-                <h1>Education</h1>
+
+                <div class="education-header">
+                    <h1>Education</h1>
+
+                    <a href="{% url 'main:create_education' %}"
+                       class="button">
+                        Tambah Pendidikan
+                    </a>
+                </div>
+
+                {% if messages %}
+                    <div class="education-messages" role="status">
+                        {% for message in messages %}
+                            <p>{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
                 <div class="education-grid">
                     {% for education in education_list %}
-                    <article class="education-card">
-                        <div class="education-content">
-                            <span class="education-category">
-                                {{ education.get_category_display }}
-                            </span>
+                        <article class="education-card">
+                            <div class="education-content">
+                                <span class="education-category">
+                                    {{ education.get_category_display }}
+                                </span>
 
-                            <h2>{{ education.title }}</h2>
+                                <h2>{{ education.title }}</h2>
 
-                            <p class="education-description">
-                                {{ education.description }}
-                            </p>
+                                <p class="education-description">
+                                    {{ education.description }}
+                                </p>
 
-                            {% if education.is_ongoing %}
-                                <p class="education-status">Sedang berlangsung</p>
-                            {% else %}
-                                <p class="education-status">Selesai</p>
+                                {% if education.is_ongoing %}
+                                    <p class="education-status">
+                                        Sedang berlangsung
+                                    </p>
+                                {% else %}
+                                    <p class="education-status">
+                                        Selesai
+                                    </p>
+                                {% endif %}
+
+                                <div class="education-actions">
+                                    <a href="{% url 'main:update_education' education.id %}"
+                                       class="button button-secondary">
+                                        Edit
+                                    </a>
+
+                                    <form method="post"
+                                          action="{% url 'main:delete_education' education.id %}"
+                                          onsubmit="return confirm('Yakin ingin menghapus pendidikan ini?');">
+                                        {% csrf_token %}
+
+                                        <button type="submit"
+                                                class="button button-danger">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            {% if education.thumbnail %}
+                                <img
+                                    class="education-photo"
+                                    src="{{ education.thumbnail }}"
+                                    alt="Logo {{ education.title }}"
+                                    width="140"
+                                    height="140"
+                                >
                             {% endif %}
-                        </div>
-
-                        {% if education.thumbnail %}
-                            <img
-                                class="education-photo"
-                                src="{{ education.thumbnail }}"
-                                alt="Logo {{ education.title }}"
-                                width="140"
-                                height="140"
-                            >
-                        {% endif %}
-                    </article>
-                {% empty %}
-                    <p class="empty-state">
-                        Belum ada pendidikan yang ditambahkan.
-                    </p>
-                {% endfor %}
+                        </article>
+                    {% empty %}
+                        <p class="empty-state">
+                            Belum ada pendidikan yang ditambahkan.
+                        </p>
+                    {% endfor %}
                 </div>
             </div>
         </section>
     </main>
-
 {% endblock content %}

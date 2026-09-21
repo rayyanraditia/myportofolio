@@ -31,9 +31,18 @@ def show_experience(request):
 
 
 def show_education(request):
+    json_response = get_education_json(request)
+
+    education_objects = serializers.deserialize(
+        "json",
+        json_response.content.decode("utf-8"),
+    )
+
     context = {
         "name": "Rayyan Raditia Pramana",
-        "education_list": Education.objects.all(),
+        "education_list": [
+            education.object for education in education_objects
+        ],
     }
     return render(request, "education.html", context)
 

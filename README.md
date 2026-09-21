@@ -27,3 +27,17 @@ makemigrations membuat file yang mencatat perubahan struktur model, sedangkan mi
 python manage.py makemigrations main
 python manage.py migrate
 Perintah pertama menghasilkan file migrasi untuk penambahan field tersebut. Perintah kedua menjalankan migrasinya sehingga kolom study_program ditambahkan pada tabel Education di database.
+
+
+### Tugas 3
+Saya menggunakan OpenAI Codex sebagai pendamping belajar dan peninjau kode dalam pengerjaan Tugas 3. AI membantu menjelaskan persyaratan, memberikan contoh implementasi, serta meninjau form, view, routing, template, dan CSS yang saya terapkan Pengerjaan dilakukan bertahap. saya meminta penjelasan untuk satu bagian, menerapkan perubahan pada proyek, kemudian meminta review sebelum melanjutkan.
+melanjutkan. 
+1. Apa manfaat ModelForm dan CSRF token pada form Django?
+ModelForm mempermudah pembuatan form berdasarkan model tanpa perlu menulis ulang setiap field dan validasinya. Pada proyek ini, EducationForm digunakan untuk menambah dan mengedit data Education. CSRF token berfungsi melindungi form dari permintaan palsu yang berasal dari situs lain. Token ini ditambahkan menggunakan {% csrf_token %} pada form POST.
+
+2. Mengapa JSON sering dipilih untuk pertukaran data web?
+JSON sering digunakan karena formatnya sederhana, ringan, dan mudah dibaca. JSON juga mudah digunakan oleh JavaScript melalui JSON.parse() dan JSON.stringify(), sehingga mempermudah pertukaran data antara backend dan frontend.
+
+3. Bagaimana data Education dikembalikan sebagai JSON?
+Saat /api/education/ diakses, Django menjalankan fungsi get_education_json yang mengambil seluruh data menggunakan Education.objects.all(). Data tersebut diubah menjadi JSON menggunakan serializers.serialize() dan dikirim melalui HttpResponse dengan tipe application/json. Pada halaman /education/, fungsi show_education memanggil fungsi tersebut secara langsung, mengubah kembali JSON menjadi objek Education, lalu menampilkannya melalui education.html. Proses ini dilakukan di server tanpa permintaan HTTP tambahan.
+

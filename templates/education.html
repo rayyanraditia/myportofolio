@@ -12,11 +12,11 @@
 
                 <div class="education-header">
                     <h1>Education</h1>
-
-                    <a href="{% url 'main:create_education' %}"
-                       class="button">
-                        Tambah Pendidikan
-                    </a>
+                    {% if user.is_superuser %}
+                        <a href="{% url 'main:create_education' %}" class="button">
+                            Tambah Pendidikan
+                        </a>
+                    {% endif %}
                 </div>
 
                 {% if messages %}
@@ -50,23 +50,25 @@
                                         Selesai
                                     </p>
                                 {% endif %}
-
                                 <div class="education-actions">
-                                    <a href="{% url 'main:update_education' education.id %}"
-                                       class="button button-secondary">
-                                        Edit
-                                    </a>
+                                    {% if user.is_superuser or is_editor %}
+                                        <a href="{% url 'main:update_education' education.id %}"
+                                        class="button button-secondary">
+                                            Edit
+                                        </a>
+                                    {% endif %}
 
-                                    <form method="post"
-                                          action="{% url 'main:delete_education' education.id %}"
-                                          onsubmit="return confirm('Yakin ingin menghapus pendidikan ini?');">
-                                        {% csrf_token %}
+                                    {% if user.is_superuser %}
+                                        <form method="post"
+                                            action="{% url 'main:delete_education' education.id %}"
+                                            onsubmit="return confirm('Yakin ingin menghapus pendidikan ini?');">
+                                            {% csrf_token %}
 
-                                        <button type="submit"
-                                                class="button button-danger">
-                                            Hapus
-                                        </button>
-                                    </form>
+                                            <button type="submit" class="button button-danger">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                 </div>
                             </div>
 

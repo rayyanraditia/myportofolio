@@ -52,6 +52,7 @@ def show_education(request):
         "education_list": [
             education.object for education in education_objects
         ],
+        "is_editor": is_education_editor(request.user),
     }
     return render(request, "education.html", context)
 
@@ -118,6 +119,10 @@ def delete_project(request, project_id):
 
     return redirect("main:show_projects")
 
+def is_education_editor(user):
+    return (user.is_authenticated and user.groups.filter(name="Editor").exists()
+    )
+
 @login_required(login_url="/login/")
 def create_education(request):
     if not request.user.is_superuser:
@@ -141,7 +146,14 @@ def create_education(request):
     return render(request, "education_form.html", context)
 
 
+@login_required(login_url="/login/")
 def update_education(request, education_id):
+    if not (
+        request.user.is_superuser
+        or is_education_editor(request.user)
+    ):
+        raise PermissionDenied
+
     education = get_object_or_404(Education, pk=education_id)
 
     form = EducationForm(
@@ -163,8 +175,12 @@ def update_education(request, education_id):
     return render(request, "education_form.html", context)
 
 
+@login_required(login_url="/login/")
 @require_POST
 def delete_education(request, education_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     education = get_object_or_404(Education, pk=education_id)
     education.delete()
 

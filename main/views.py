@@ -190,7 +190,7 @@ def delete_education(request, education_id):
 
 def get_education_json(request):
     education_list = Education.objects.all()
-    education_json = serializers.serialize("json", education_list)
+    education_json = serializers.serialize("json", education_list, use_natural_foreign_keys=True,)
 
     return HttpResponse(
         education_json,
@@ -246,3 +246,15 @@ def toggle_star(request, project_id):
             project.starred_by.add(request.user)
 
     return redirect("main:show_projects")
+
+@login_required(login_url="/login/")
+@require_POST
+def toggle_education_star(request, education_id):
+    education = get_object_or_404(Education, pk=education_id)
+
+    if education.starred_by.filter(pk=request.user.pk).exists():
+        education.starred_by.remove(request.user)
+    else:
+        education.starred_by.add(request.user)
+
+    return redirect("main:show_education")

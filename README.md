@@ -41,3 +41,40 @@ JSON sering digunakan karena formatnya sederhana, ringan, dan mudah dibaca. JSON
 3. Bagaimana data Education dikembalikan sebagai JSON?
 Saat /api/education/ diakses, Django menjalankan fungsi get_education_json yang mengambil seluruh data menggunakan Education.objects.all(). Data tersebut diubah menjadi JSON menggunakan serializers.serialize() dan dikirim melalui HttpResponse dengan tipe application/json. Pada halaman /education/, fungsi show_education memanggil fungsi tersebut secara langsung, mengubah kembali JSON menjadi objek Education, lalu menampilkannya melalui education.html. Proses ini dilakukan di server tanpa permintaan HTTP tambahan.
 
+
+### Tugas 4
+
+Tugas ini melanjutkan fitur Education dari Tugas 3 dengan menambahkan authentication, authorization, session, cookie, dan star. Education serta API JSON tetap dapat dibaca tanpa login.
+
+-> Hak Akses
+1. Pengunjung: hanya membaca.
+2. User: membaca dan star/unstar.
+3. Editor: membaca, star/unstar, dan edit.
+4. Superuser: seluruh akses.
+
+Pengguna tanpa login diarahkan ke login, sedangkan pengguna tanpa izin mendapat HTTP 403. Hapus dan star/unstar hanya menerima POST.
+
+-> Menjalankan Proyek
+python -m venv env
+source env/bin/activate
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+
+Grup Editor dibuat melalui /admin dan pengguna ditambahkan ke grup tersebut.
+
+-> Implementasi
+Education memiliki relasi starred_by ke User. Star/unstar dilindungi oleh login, POST, dan CSRF. API menampilkan username pemberi star tanpa mengekspos email atau password. Session digunakan untuk autentikasi, sedangkan cookie `last_login` disimpan setelah login dan dihapus saat logout.
+
+-> Verifikasi
+bash
+python manage.py check
+python manage.py makemigrations --check --dry-run
+
+Pengujian mencakup hak akses, star/unstar, CSRF, redirect login, dan API.
+
+-> Penggunaan AI
+Saya menggunakan OpenAI Codex untuk membantu memahami requirement, memberi arahan implementasi, melakukan review, dan pengujian. Implementasi kode tetap dilakukan oleh saya. Berikut adalah beberapa ringkasan prompt yang diberikan:
+1. Review implementasi star/unstar pada Education dan cek apakah sudah menggunakan login_required, POST, dan CSRF dengan benar
+2. Bantu cek apakah pembatasan tambah, edit, dan hapus Education sudah sesuai dengan hak akses tiap role.
+

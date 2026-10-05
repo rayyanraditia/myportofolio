@@ -1,19 +1,16 @@
+import datetime
+
 from django.contrib import messages
 from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.shortcuts import redirect, render
-from django.core import serializers
-from django.http import HttpResponse
+from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse
 
 from main.forms import EducationForm, ProjectForm
 from main.models import Education, Experience, Project
-
-import datetime
-from django.contrib.auth.decorators import login_required  
-from django.core.exceptions import PermissionDenied        
 
 
 def show_main(request):
@@ -41,19 +38,10 @@ def show_experience(request):
 
 
 def show_education(request):
-    json_response = get_education_json(request)
-
-    education_objects = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-
     context = {
         "name": "Rayyan Raditia Pramana",
-        "education_list": [
-            education.object for education in education_objects
-        ],
         "is_editor": is_education_editor(request.user),
+        "form": EducationForm(),
     }
     return render(request, "education.html", context)
 
@@ -160,6 +148,42 @@ def create_education(request):
     return render(request, "education_form.html", context)
 
 
+@require_POST
+def create_education_ajax(request):
+    """Create education data for the portfolio owner through AJAX."""
+    if not (
+        request.user.is_authenticated
+        and request.user.is_superuser
+    ):
+        return JsonResponse(
+            {
+                "message": (
+                    "Hanya pemilik portofolio yang dapat "
+                    "menambahkan pendidikan."
+                ),
+            },
+            status=403,
+        )
+
+    form = EducationForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse(
+            {"errors": form.errors.get_json_data()},
+            status=400,
+        )
+
+    education = form.save()
+
+    return JsonResponse(
+        {
+            "message": "Pendidikan berhasil ditambahkan.",
+            "pk": str(education.pk),
+        },
+        status=201,
+    )
+
+
 @login_required(login_url="/login/")
 def update_education(request, education_id):
     if not (
@@ -203,13 +227,50 @@ def delete_education(request, education_id):
 
 
 def get_education_json(request):
-    education_list = Education.objects.all()
-    education_json = serializers.serialize("json", education_list, use_natural_foreign_keys=True,)
+    """Return education data with search results and user-specific star status."""
+    title_query = request.GET.get("title", "").strip()
 
-    return HttpResponse(
-        education_json,
-        content_type="application/json",
+    education_list = (
+        Education.objects
+        .prefetch_related("starred_by")
+        .order_by("-started_at", "id")
     )
+
+    if title_query:
+        education_list = education_list.filter(
+            title__icontains=title_query,
+        )
+
+    data = []
+
+    for education in education_list:
+        starred_users = list(education.starred_by.all())
+        is_starred = (
+            request.user.is_authenticated
+            and any(
+                user.pk == request.user.pk
+                for user in starred_users
+            )
+        )
+
+        data.append({
+            "pk": str(education.pk),
+            "fields": {
+                "title": education.title,
+                "description": education.description,
+                "category": education.category,
+                "category_display": education.get_category_display(),
+                "thumbnail": education.thumbnail,
+                "is_ongoing": education.is_ongoing,
+                "star_count": len(starred_users),
+                "is_starred": is_starred,
+                "starred_by_names": ", ".join(
+                    sorted(user.username for user in starred_users)
+                ),
+            },
+        })
+
+    return JsonResponse(data, safe=False)
 
 def register(request):
     form = UserCreationForm(request.POST or None)

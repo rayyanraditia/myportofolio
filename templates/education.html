@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block meta %}
     <title>Education - {{ name }}</title>
@@ -6,12 +7,17 @@
 
 {% block content %}
     <main>
-        <section class="education-section" id="education">
+        <section
+            class="education-section"
+            id="education"
+            data-endpoint="{% url 'main:get_education_json' %}"
+        >
             <div class="container">
                 <p class="section-kicker">Perjalanan saya sejauh ini</p>
 
                 <div class="education-header">
                     <h1>Education</h1>
+
                     {% if user.is_superuser %}
                         <a href="{% url 'main:create_education' %}" class="button">
                             Tambah Pendidikan
@@ -27,70 +33,114 @@
                     </div>
                 {% endif %}
 
-                <div class="education-grid">
-                    {% for education in education_list %}
-                        <article class="education-card">
-                            <div class="education-content">
-                                <span class="education-category">
-                                    {{ education.get_category_display }}
-                                </span>
+                <form id="education-search-form" class="project-search" role="search">
+                    <input
+                        type="search"
+                        id="education-search-input"
+                        name="title"
+                        class="project-search__input"
+                        placeholder="Cari nama institusi"
+                        aria-label="Cari pendidikan berdasarkan nama institusi"
+                    >
+                    <button type="submit" class="button">Cari</button>
+                </form>
 
-                                <h2>{{ education.title }}</h2>
-
-                                <p class="education-description">
-                                    {{ education.description }}
-                                </p>
-
-                                {% if education.is_ongoing %}
-                                    <p class="education-status">
-                                        Sedang berlangsung
-                                    </p>
-                                {% else %}
-                                    <p class="education-status">
-                                        Selesai
-                                    </p>
-                                {% endif %}
-                                <div class="education-actions">
-                                    {% include "components/education_star.html" with education=education %}
-
-                                    {% if user.is_superuser or is_editor %}
-                                        <a href="{% url 'main:update_education' education.id %}"
-                                        class="button button-secondary">
-                                            Edit
-                                        </a>
-                                    {% endif %}
-
-                                    {% if user.is_superuser %}
-                                        <form method="post"
-                                            action="{% url 'main:delete_education' education.id %}"
-                                            onsubmit="return confirm('Yakin ingin menghapus pendidikan ini?');">
-                                            {% csrf_token %}
-
-                                            <button type="submit" class="button button-danger">
-                                                Hapus
-                                            </button>
-                                        </form>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            {% if education.thumbnail %}
-                                <img
-                                    class="education-photo"
-                                    src="{{ education.thumbnail }}"
-                                    alt="Logo {{ education.title }}"
-                                    width="140"
-                                    height="140"
-                                >
-                            {% endif %}
-                        </article>
-                    {% empty %}
-                        <p class="empty-state">
-                            Belum ada pendidikan yang ditambahkan.
-                        </p>
-                    {% endfor %}
+                <div id="education-loading" class="empty-state" role="status">
+                    <p>Memuat data pendidikan...</p>
                 </div>
+
+                <div id="education-error" class="empty-state hide" role="alert">
+                    <p>Gagal memuat data pendidikan. Silakan coba lagi.</p>
+                    <button
+                        type="button"
+                        id="education-retry"
+                        class="button button-secondary"
+                    >
+                        Coba lagi
+                    </button>
+                </div>
+
+                <div id="education-empty" class="empty-state hide" role="status">
+                    <p id="education-empty-message"></p>
+                </div>
+
+                <div
+                    id="education-grid"
+                    class="education-grid hide"
+                    aria-busy="true"
+                ></div>
+
+                <noscript>
+                    <p>Aktifkan JavaScript untuk menampilkan data pendidikan.</p>
+                </noscript>
             </div>
         </section>
     </main>
+
+    <template id="education-card-template">
+        <article class="education-card">
+            <div class="education-content">
+                <span class="education-category"></span>
+                <h2 data-field="title"></h2>
+                <p class="education-description"></p>
+                <p class="education-status"></p>
+
+                <div class="education-actions">
+                    {% if user.is_authenticated %}
+                        <form
+                            method="post"
+                            class="star-form"
+                            data-url-template="{% url 'main:toggle_education_star' '00000000-0000-0000-0000-000000000000' %}"
+                        >
+                            {% csrf_token %}
+                            <button
+                                type="submit"
+                                class="button button-star"
+                                aria-pressed="false"
+                            >
+                                <span aria-hidden="true">★</span>
+                                <span data-field="star-label">Star</span>
+                                <span class="star-count"></span>
+                            </button>
+                        </form>
+                    {% else %}
+                        <span class="education-star-summary">
+                            <span aria-hidden="true">★</span>
+                            <span class="star-count"></span> star
+                        </span>
+                        <a href="{% url 'main:login' %}" class="button button-secondary">
+                            Login untuk memberi star
+                        </a>
+                    {% endif %}
+
+                    {% if user.is_superuser or is_editor %}
+                        <a
+                            class="button button-secondary"
+                            data-action="edit"
+                            data-url-template="{% url 'main:update_education' '00000000-0000-0000-0000-000000000000' %}"
+                        >
+                            Edit
+                        </a>
+                    {% endif %}
+
+                    {% if user.is_superuser %}
+                        <form
+                            method="post"
+                            data-action="delete"
+                            data-url-template="{% url 'main:delete_education' '00000000-0000-0000-0000-000000000000' %}"
+                        >
+                            {% csrf_token %}
+                            <button type="submit" class="button button-danger">
+                                Hapus
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <img class="education-photo" width="140" height="140" alt="">
+        </article>
+    </template>
+
+    <script src="{% static 'js/education.js' %}" defer></script>
 {% endblock content %}

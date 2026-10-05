@@ -40,11 +40,6 @@ def show_experience(request):
 def show_education(request):
     context = {
         "name": "Rayyan Raditia Pramana",
-        "education_list": (
-            Education.objects
-            .prefetch_related("starred_by")
-            .order_by("-started_at", "id")
-        ),
         "is_editor": is_education_editor(request.user),
     }
     return render(request, "education.html", context)

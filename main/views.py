@@ -41,6 +41,7 @@ def show_education(request):
     context = {
         "name": "Rayyan Raditia Pramana",
         "is_editor": is_education_editor(request.user),
+        "form": EducationForm(),
     }
     return render(request, "education.html", context)
 
@@ -145,6 +146,42 @@ def create_education(request):
         "submit_label": "Tambah Pendidikan",
     }
     return render(request, "education_form.html", context)
+
+
+@require_POST
+def create_education_ajax(request):
+    """Create education data for the portfolio owner through AJAX."""
+    if not (
+        request.user.is_authenticated
+        and request.user.is_superuser
+    ):
+        return JsonResponse(
+            {
+                "message": (
+                    "Hanya pemilik portofolio yang dapat "
+                    "menambahkan pendidikan."
+                ),
+            },
+            status=403,
+        )
+
+    form = EducationForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse(
+            {"errors": form.errors.get_json_data()},
+            status=400,
+        )
+
+    education = form.save()
+
+    return JsonResponse(
+        {
+            "message": "Pendidikan berhasil ditambahkan.",
+            "pk": str(education.pk),
+        },
+        status=201,
+    )
 
 
 @login_required(login_url="/login/")

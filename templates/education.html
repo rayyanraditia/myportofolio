@@ -19,9 +19,7 @@
                     <h1>Education</h1>
 
                     {% if user.is_superuser %}
-                        <a href="{% url 'main:create_education' %}" class="button">
-                            Tambah Pendidikan
-                        </a>
+                        <button type="button" class="button" popovertarget="add-education-modal">Tambah Pendidikan</button>
                     {% endif %}
                 </div>
 
@@ -141,6 +139,10 @@
             <img class="education-photo" width="140" height="140" alt="">
         </article>
     </template>
+
+    {% if user.is_superuser %}
+        {% include "components/education_form_modal.html" %}
+    {% endif %}
 
     <script src="{% static 'js/education.js' %}" defer></script>
 {% endblock content %}

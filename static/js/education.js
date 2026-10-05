@@ -10,6 +10,8 @@
     const grid = document.getElementById("education-grid");
     const cardTemplate = document.getElementById("education-card-template");
     const emptyMessage = document.getElementById("education-empty-message");
+    const educationForm = document.getElementById("education-form");
+    const educationModal = document.getElementById("add-education-modal");
 
     const states = {
         loading: document.getElementById("education-loading"),
@@ -181,6 +183,93 @@
         }
     }
 
+    function getValidationMessage(result, status) {
+        if (result.errors) {
+            return Object.entries(result.errors)
+                .flatMap(([fieldName, errors]) => {
+                    const field = educationForm.elements.namedItem(fieldName);
+                    const label = field?.labels?.[0]?.textContent.trim();
+
+                    return errors.map((error) => (
+                        label ? `${label}: ${error.message}` : error.message
+                    ));
+                })
+                .join(" ");
+        }
+
+        return result.message || `Permintaan gagal (HTTP ${status}).`;
+    }
+
+    async function addEducation(event) {
+        event.preventDefault();
+
+        const submitButton = educationForm.querySelector(
+            "button[type='submit']",
+        );
+
+        if (submitButton.disabled) return;
+
+        const originalLabel = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = "Menyimpan...";
+        educationForm.setAttribute("aria-busy", "true");
+
+        try {
+            const response = await fetch(educationForm.action, {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                },
+                body: new FormData(educationForm),
+            });
+
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                showToast(
+                    "Gagal menambahkan pendidikan",
+                    getValidationMessage(result, response.status),
+                    "error",
+                    6000,
+                );
+                return;
+            }
+
+            educationForm.reset();
+
+            if (educationModal.matches(":popover-open")) {
+                educationModal.hidePopover();
+            }
+
+            showToast(
+                "Berhasil",
+                result.message || "Pendidikan berhasil ditambahkan.",
+                "success",
+            );
+
+            // Tampilkan seluruh data agar hasil penambahan tidak
+            // tersembunyi oleh pencarian sebelumnya.
+            window.clearTimeout(debounceTimer);
+            searchInput.value = "";
+
+            await fetchEducation();
+        } catch (error) {
+            console.error("Gagal mengirim Education:", error);
+
+            showToast(
+                "Koneksi bermasalah",
+                "Status penyimpanan belum dapat dipastikan. "
+                    + "Periksa daftar pendidikan sebelum mencoba kembali.",
+                "error",
+                6000,
+            );
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalLabel;
+            educationForm.removeAttribute("aria-busy");
+        }
+    }
+
     searchInput.addEventListener("input", () => {
         window.clearTimeout(debounceTimer);
         activeController?.abort();
@@ -199,6 +288,10 @@
         window.clearTimeout(debounceTimer);
         fetchEducation();
     });
+
+    if (educationForm && educationModal) {
+        educationForm.addEventListener("submit", addEducation);
+    }
 
     fetchEducation();
 })();

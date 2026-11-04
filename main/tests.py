@@ -76,22 +76,26 @@ class EducationTest(TestCase):
             category="senior high school",
         )
 
-        response = self.client.get(reverse("main:show_education"))
+        page = self.client.get(reverse("main:show_education"))
+        self.assertContains(page, 'id="education-grid"')
+        self.assertContains(page, reverse("main:get_education_json"))
+        self.assertContains(page, 'js/education.js')
 
+        response = self.client.get(reverse("main:get_education_json"))
+        self.assertEqual(response.status_code, 200)
+        records = {item["pk"]: item["fields"] for item in response.json()}
+        self.assertEqual(len(records), 2)
         for education in (university, school):
             with self.subTest(title=education.title):
-                self.assertContains(response, education.title)
-                self.assertContains(response, education.description)
-
-        self.assertContains(response, "University")
-        self.assertContains(response, "Senior High School")
-        self.assertNotContains(
-            response, "Belum ada pendidikan yang ditambahkan."
-        )
+                record = records[str(education.pk)]
+                self.assertEqual(record["title"], education.title)
+                self.assertEqual(record["description"], education.description)
+                self.assertEqual(record["category_display"], education.get_category_display())
 
     def test_empty_education_page(self):
-        response = self.client.get(reverse("main:show_education"))
-
-        self.assertContains(
-            response, "Belum ada pendidikan yang ditambahkan."
-        )
+        page = self.client.get(reverse("main:show_education"))
+        self.assertContains(page, 'id="education-empty"')
+        self.assertContains(page, 'id="education-empty-message"')
+        response = self.client.get(reverse("main:get_education_json"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])

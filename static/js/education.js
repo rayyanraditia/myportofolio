@@ -51,7 +51,7 @@
     }
 
     function buildEducationCard(item) {
-        const education = item.fields;
+        const education = item;
         const card = cardTemplate.content.firstElementChild.cloneNode(true);
 
         card.querySelector("[data-field='title']").textContent =
@@ -84,7 +84,7 @@
         card.querySelectorAll("[data-url-template]").forEach((element) => {
             const url = element.dataset.urlTemplate.replace(
                 UUID_PLACEHOLDER,
-                encodeURIComponent(item.pk),
+                encodeURIComponent(education.id),
             );
 
             if (element.tagName === "FORM") {

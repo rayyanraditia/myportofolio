@@ -50,6 +50,81 @@
         return null;
     }
 
+    async function submitEducationAction(event, method) {
+        event.preventDefault();
+
+        const form = event.currentTarget;
+        const button = form.querySelector("button[type='submit']");
+        const isDelete = method === "DELETE";
+
+        if (button.disabled) return;
+
+        if (
+            isDelete
+            && !window.confirm("Yakin ingin menghapus pendidikan ini?")
+        ) {
+            return;
+        }
+
+        button.disabled = true;
+        form.setAttribute("aria-busy", "true");
+
+        try {
+            const csrfToken = form.querySelector(
+                "[name='csrfmiddlewaretoken']",
+            ).value;
+
+            const response = await fetch(form.action, {
+                method,
+                headers: {
+                    Accept: "application/json",
+                    "X-CSRFToken": csrfToken,
+                },
+            });
+
+            // DELETE berhasil mengembalikan 204 tanpa body JSON.
+            const result = response.status === 204
+                ? {}
+                : await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                showToast(
+                    "Permintaan gagal",
+                    getValidationMessage(result, response.status),
+                    "error",
+                    6000,
+                );
+                return;
+            }
+
+            const message = isDelete
+                ? "Pendidikan berhasil dihapus."
+                : (
+                    result.is_starred
+                        ? "Star berhasil ditambahkan."
+                        : "Star berhasil dibatalkan."
+                );
+
+            showToast("Berhasil", message, "success");
+
+            window.clearTimeout(debounceTimer);
+            await fetchEducation();
+        } catch (error) {
+            console.error("Gagal memperbarui Education:", error);
+
+            showToast(
+                "Koneksi bermasalah",
+                "Status perubahan belum dapat dipastikan. "
+                    + "Muat ulang daftar sebelum mencoba kembali.",
+                "error",
+                6000,
+            );
+        } finally {
+            button.disabled = false;
+            form.removeAttribute("aria-busy");
+        }
+    }
+
     function buildEducationCard(item) {
         const education = item;
         const card = cardTemplate.content.firstElementChild.cloneNode(true);
@@ -94,13 +169,19 @@
             }
         });
 
+        const starForm = card.querySelector(".star-form");
+
+        if (starForm) {
+            starForm.addEventListener("submit", (event) => {
+                submitEducationAction(event, "POST");
+            });
+        }
+
         const deleteForm = card.querySelector("[data-action='delete']");
 
         if (deleteForm) {
             deleteForm.addEventListener("submit", (event) => {
-                if (!window.confirm("Yakin ingin menghapus pendidikan ini?")) {
-                    event.preventDefault();
-                }
+                submitEducationAction(event, "DELETE");
             });
         }
 

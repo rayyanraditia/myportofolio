@@ -29,7 +29,7 @@
         <form
             id="education-form"
             method="post"
-            action="{% url 'main:create_education_ajax' %}"
+            action="{% url 'api:education-list' %}"
             class="project-form"
         >
             {% csrf_token %}

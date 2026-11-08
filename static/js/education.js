@@ -184,20 +184,26 @@
     }
 
     function getValidationMessage(result, status) {
-        if (result.errors) {
-            return Object.entries(result.errors)
-                .flatMap(([fieldName, errors]) => {
-                    const field = educationForm.elements.namedItem(fieldName);
-                    const label = field?.labels?.[0]?.textContent.trim();
-
-                    return errors.map((error) => (
-                        label ? `${label}: ${error.message}` : error.message
-                    ));
-                })
-                .join(" ");
+        if (typeof result.detail === "string") {
+            return result.detail;
         }
 
-        return result.message || `Permintaan gagal (HTTP ${status}).`;
+        const messages = Object.entries(result).flatMap(
+            ([fieldName, errors]) => {
+                const field = educationForm?.elements.namedItem(fieldName);
+                const label = field?.labels?.[0]?.textContent.trim();
+
+                const values = Array.isArray(errors) ? errors : [errors];
+
+                return values
+                    .filter((message) => typeof message === "string")
+                    .map((message) => (
+                        label ? `${label}: ${message}` : message
+                    ));
+            },
+        );
+
+        return messages.join(" ") || `Permintaan gagal (HTTP ${status}).`;
     }
 
     async function addEducation(event) {
@@ -215,10 +221,15 @@
         educationForm.setAttribute("aria-busy", "true");
 
         try {
+            const csrfToken = educationForm.querySelector(
+                "[name='csrfmiddlewaretoken']",
+            ).value;
+
             const response = await fetch(educationForm.action, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
+                    "X-CSRFToken": csrfToken,
                 },
                 body: new FormData(educationForm),
             });

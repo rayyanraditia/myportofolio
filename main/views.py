@@ -42,6 +42,7 @@ def show_education(request):
         "name": "Rayyan Raditia Pramana",
         "is_editor": is_education_editor(request.user),
         "form": EducationForm(),
+        "edit_form": EducationForm(auto_id="edit_%s"),
     }
     return render(request, "education.html", context)
 

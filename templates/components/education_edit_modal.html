@@ -1,0 +1,56 @@
+<div
+    id="edit-education-modal"
+    class="project-form-modal"
+    popover="auto"
+    role="dialog"
+    aria-labelledby="edit-education-modal-title"
+>
+    <button
+        type="button"
+        class="project-form-modal__backdrop"
+        popovertarget="edit-education-modal"
+        popovertargetaction="hide"
+        aria-label="Tutup form edit pendidikan"
+    ></button>
+
+    <div class="project-form-modal__content">
+        <button
+            type="button"
+            class="project-form-modal__close"
+            popovertarget="edit-education-modal"
+            popovertargetaction="hide"
+            aria-label="Tutup form edit pendidikan"
+        >
+            ×
+        </button>
+
+        <h2 id="edit-education-modal-title">Edit Pendidikan</h2>
+
+        <form id="education-edit-form" class="project-form" method="post">
+            {% csrf_token %}
+
+            {% for field in edit_form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                </div>
+            {% endfor %}
+
+            <div class="project-form-modal__actions">
+                <button
+                    type="button"
+                    class="button button-secondary"
+                    popovertarget="edit-education-modal"
+                    popovertargetaction="hide"
+                >
+                    Batal
+                </button>
+                <button type="submit" class="button">
+                    Simpan Perubahan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

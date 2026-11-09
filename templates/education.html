@@ -10,7 +10,7 @@
         <section
             class="education-section"
             id="education"
-            data-endpoint="{% url 'main:get_education_json' %}"
+            data-endpoint="{% url 'api:education-list' %}"
         >
             <div class="container">
                 <p class="section-kicker">Perjalanan saya sejauh ini</p>
@@ -88,7 +88,7 @@
                         <form
                             method="post"
                             class="star-form"
-                            data-url-template="{% url 'main:toggle_education_star' '00000000-0000-0000-0000-000000000000' %}"
+                            data-url-template="{% url 'api:education-star' '00000000-0000-0000-0000-000000000000' %}"
                         >
                             {% csrf_token %}
                             <button
@@ -112,20 +112,21 @@
                     {% endif %}
 
                     {% if user.is_superuser or is_editor %}
-                        <a
+                        <button
+                            type="button"
                             class="button button-secondary"
                             data-action="edit"
-                            data-url-template="{% url 'main:update_education' '00000000-0000-0000-0000-000000000000' %}"
+                            data-url-template="{% url 'api:education-detail' '00000000-0000-0000-0000-000000000000' %}"
                         >
                             Edit
-                        </a>
+                        </button>
                     {% endif %}
 
                     {% if user.is_superuser %}
                         <form
                             method="post"
                             data-action="delete"
-                            data-url-template="{% url 'main:delete_education' '00000000-0000-0000-0000-000000000000' %}"
+                            data-url-template="{% url 'api:education-detail' '00000000-0000-0000-0000-000000000000' %}"
                         >
                             {% csrf_token %}
                             <button type="submit" class="button button-danger">
@@ -142,6 +143,10 @@
 
     {% if user.is_superuser %}
         {% include "components/education_form_modal.html" %}
+    {% endif %}
+
+    {% if user.is_superuser or is_editor %}
+        {% include "components/education_edit_modal.html" %}
     {% endif %}
 
     <script src="{% static 'js/education.js' %}" defer></script>

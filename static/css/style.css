@@ -923,3 +923,34 @@ h1, .brand {
         text-align: center;
     }
 }
+/* Education filters wrap independently without changing Projects search. */
+#education-search-form {
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+#education-search-input {
+    flex: 2 1 15rem;
+    width: auto;
+}
+
+.education-filter-field {
+    display: flex;
+    flex: 1 1 12rem;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+@media (max-width: 700px) {
+    #education-search-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #education-search-input,
+    .education-filter-field {
+        flex: initial;
+        width: 100%;
+    }
+}

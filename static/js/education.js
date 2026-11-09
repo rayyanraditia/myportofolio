@@ -6,6 +6,8 @@
 
     const searchForm = document.getElementById("education-search-form");
     const searchInput = document.getElementById("education-search-input");
+    const categoryFilter = document.getElementById("education-category-filter");
+    const orderingSelect = document.getElementById("education-ordering");
     const retryButton = document.getElementById("education-retry");
     const grid = document.getElementById("education-grid");
     const cardTemplate = document.getElementById("education-card-template");
@@ -240,6 +242,11 @@
             url.searchParams.set("title", query);
         }
 
+        if (categoryFilter.value) {
+            url.searchParams.set("category", categoryFilter.value);
+        }
+        url.searchParams.set("ordering", orderingSelect.value);
+
         showState("loading");
 
         try {
@@ -266,8 +273,8 @@
             grid.replaceChildren();
 
             if (data.length === 0) {
-                emptyMessage.textContent = query
-                    ? `Tidak ada pendidikan yang cocok dengan "${query}".`
+                emptyMessage.textContent = query || categoryFilter.value
+                    ? "Tidak ada pendidikan yang cocok dengan pencarian dan filter."
                     : "Belum ada pendidikan yang ditambahkan.";
 
                 showState("empty");
@@ -434,6 +441,8 @@
             // tersembunyi oleh pencarian sebelumnya.
             window.clearTimeout(debounceTimer);
             searchInput.value = "";
+            categoryFilter.value = "";
+            orderingSelect.value = "newest";
 
             await fetchEducation();
         } catch (error) {
@@ -452,6 +461,13 @@
             educationForm.removeAttribute("aria-busy");
         }
     }
+
+    [categoryFilter, orderingSelect].forEach((element) => {
+        element.addEventListener("change", () => {
+            window.clearTimeout(debounceTimer);
+            fetchEducation();
+        });
+    });
 
     searchInput.addEventListener("input", () => {
         window.clearTimeout(debounceTimer);

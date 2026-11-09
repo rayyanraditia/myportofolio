@@ -120,3 +120,28 @@ class EducationSerializer(serializers.ModelSerializer):
         return ", ".join(
             sorted(user.username for user in obj.starred_by.all())
         )
+
+
+class EducationQuerySerializer(serializers.Serializer):
+    """Validate supported education filters and ordering options."""
+
+    title = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    category = serializers.ChoiceField(
+        choices=Education.EDUCATION_CHOICES,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    ordering = serializers.ChoiceField(
+        choices=[
+            "newest",
+            "oldest",
+            "title",
+            "-title",
+        ],
+        default="newest",
+    )

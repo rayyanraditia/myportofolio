@@ -79,7 +79,7 @@ Saya menggunakan OpenAI Codex untuk membantu memahami requirement, memberi araha
 2. Bantu cek apakah pembatasan tambah, edit, dan hapus Education sudah sesuai dengan hak akses tiap role.
 
 
-### Tugas 3
+### Tugas 5
 1. Jelaskan apa itu debouncing dan mengapa teknik ini penting diterapkan pada fitur pencarian yang menggunakan AJAX!
     Debouncing adalah teknik menunda pemanggilan fungsi sampai pengguna berhenti memberikan input selama waktu tertentu. Pada pencarian Education, timer 300 milidetik diulang setiap kali pengguna mengetik. Permintaan baru dikirim setelah timer selesai. Teknik ini mengurangi permintaan yang tidak diperlukan ke server karena pencarian tidak dijalankan untuk setiap huruf. Pada implementasi saya, AbortController juga digunakan untuk membatalkan request sebelumnya agar respons lama tidak menimpa hasil pencarian terbaru.
 
@@ -93,3 +93,128 @@ Saya menggunakan OpenAI Codex untuk membantu memahami requirement, memberi araha
     Saya menggunakan OpenAI Codex untuk membantu memahami instruksi Tugas 5, memberikan contoh kode, menjelaskan konsep, meninjau perubahan, menjalankan pengujian, dan menyusun draf jawaban reflektif. Bagian yang dibantu meliputi endpoint JSON Education, pencarian dengan debouncing, rendering melalui AJAX, validasi form, modal tambah, CSRF, perlindungan XSS, dan notifikasi toast. Saya menerapkan perubahan file sendiri berdasarkan arahan melalui chat, kemudian meminta review sebelum melanjutkan.
     Strategi prompt yang saya gunakan umumnya berupa permintaan pengujian terhadap fitur yang telah diletakan dalam kode saya seperti "Sesuaikan kode saya dengan instruksi yang sudah diberikan, apakah perubahan yang telah dilakukan sudah benar atau belum? jika belum sesuai maka beri tahu secara jelas saya salah dimana dan harusnya seperti apa?"
     Saya tetap memeriksa saran AI melalui pengujian. Review kode tidak selalu membuktikan perilaku di browser, sehingga pengujian backend dan browser dilakukan secara terpisah. Saya juga memperbaiki kode lama yang tertinggal setelah return, import duplikat, serta whitespace berdasarkan hasil review.
+
+
+### Tugas 6
+
+#### Ringkasan Implementasi
+
+Tugas ini memindahkan bagian Education dari endpoint JSON manual ke Django REST Framework, menggunakan model dan data dari tugas sebelumnya. Projects tetap menjadi bagian implementasi Tutorial 07.
+
+- `EducationSerializer` menggunakan field eksplisit, validasi teks, dan metadata star read-only.
+- API berbasis fungsi memakai `SessionAuthentication` dan permission empat peran.
+- Daftar, pencarian, tambah, edit, star/unstar, dan hapus dihubungkan melalui `fetch()`.
+- Modal edit menggunakan PATCH. Permintaan perubahan data menyertakan `X-CSRFToken`; error API ditampilkan melalui toast.
+- Teks ditampilkan dengan `textContent`, dan input form diisi melalui `.value`.
+- Fitur tambahan: filter jenjang dan pengurutan yang dapat digabung dengan pencarian.
+- `prefetch_related("starred_by")` mengurangi pengambilan relasi berulang pada daftar Education.
+
+#### Hak Akses API
+
+| Peran | Baca | Star/unstar | Tambah | Edit | Hapus |
+|---|---|---|---|---|---|
+| Pengunjung | Ya | Tidak | Tidak | Tidak | Tidak |
+| Pengguna biasa | Ya | Ya | Tidak | Tidak | Tidak |
+| Editor | Ya | Ya | Tidak | Ya | Tidak |
+| Superuser | Ya | Ya | Ya | Ya | Ya |
+
+Editor adalah pengguna dalam grup Django `Editor`. Status `is_staff` saja tidak memberikan hak edit Education. Akun pemberi star selalu diambil dari `request.user`.
+
+#### Endpoint dan Parameter
+
+| Endpoint | Method | Fungsi |
+|---|---|---|
+| `/api/v1/education/` | GET | Daftar, pencarian, filter, dan pengurutan |
+| `/api/v1/education/` | POST | Tambah Education |
+| `/api/v1/education/<uuid>/` | GET | Detail Education |
+| `/api/v1/education/<uuid>/` | PUT, PATCH | Ubah Education |
+| `/api/v1/education/<uuid>/` | DELETE | Hapus Education |
+| `/api/v1/education/<uuid>/star/` | POST | Toggle star pengguna yang login |
+
+Parameter endpoint daftar:
+
+- `title`: pencarian nama institusi tanpa membedakan huruf besar/kecil.
+- `category`: nilai jenjang dari pilihan model Education.
+- `ordering`: `newest`, `oldest`, `title`, atau `-title`.
+
+Urutan default adalah `newest`. Newest/oldest mengacu pada waktu record ditambahkan karena `started_at` menggunakan `auto_now_add`. ID menjadi pembeda ketika nilai pengurutan utama sama. Parameter kategori atau urutan yang tidak valid menghasilkan 400.
+
+Contoh: `/api/v1/education/?title=Indonesia&category=university&ordering=title`.
+
+API mengembalikan 201 saat pembuatan berhasil, 400 untuk input tidak valid, 403 untuk penolakan akses, 404 untuk data tidak ditemukan, dan 204 tanpa body setelah penghapusan berhasil.
+
+#### Menjalankan dan Menguji Tugas 6
+
+Gunakan virtual environment serta dependency proyek dari `requirements.txt`. Dari direktori proyek, setelah dependency terpasang:
+
+```bash
+source env/bin/activate
+python manage.py migrate
+python manage.py runserver
+```
+
+Buka `/education/` untuk halaman dan `/api/v1/education/` untuk Browsable API. Buat akun pemilik dengan `python manage.py createsuperuser`. Untuk akun Editor, buat grup bernama `Editor` melalui admin dan masukkan pengguna yang dituju ke grup tersebut.
+
+Pemeriksaan:
+
+```bash
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test main
+node --check static/js/education.js
+```
+
+Node.js hanya diperlukan untuk pemeriksaan sintaks JavaScript di atas. Hasil pengujian otomatis terakhir: 43 test lulus, termasuk 21 test Education API. Test mencakup empat peran, CRUD, validasi, star, CSRF, filter, pengurutan, dan pemeriksaan database setelah penolakan. Database test terpisah dibersihkan otomatis oleh Django.
+
+Pemeriksaan browser yang sudah dilakukan:
+
+- Daftar, pencarian, detail API, filter jenjang, dan urutan nama.
+- Kombinasi pencarian/filter dengan hasil kosong.
+- Tambah dan edit valid sebagai superuser sementara.
+- Penolakan judul yang hanya berisi tag HTML melalui toast, dengan modal edit tetap terbuka.
+
+Pemeriksaan browser yang masih perlu diselesaikan:
+
+- Edit sebagai Editor.
+- Star/unstar dan konfirmasi hapus.
+- Tampilan mobile serta regresi halaman Projects.
+
+#### Pertanyaan Reflektif
+
+1. Apa itu REST, mengapa JSON saja belum cukup, dan apa perbedaan PUT/PATCH?
+REST adalah gaya arsitektur yang mengatur interaksi client dan server melalui resource dan antarmuka yang konsisten. JSON hanya format data, sehingga penggunaan JSON tidak otomatis membuktikan pemenuhan batasan REST, seperti statelessness, antarmuka seragam, dan aturan caching.
+Education direpresentasikan melalui URL resource. GET membaca data, POST membuat data, PUT/PATCH memperbarui data, dan DELETE menghapus data. Status HTTP menjelaskan hasil permintaan.
+PUT dimaksudkan untuk mengganti representasi resource, sedangkan PATCH mengubah sebagian field. Mengubah judul saja cocok menggunakan PATCH. Dalam implementasi DRF ini, PUT menjalankan validasi penuh untuk field wajib, sedangkan PATCH memakai `partial=True`. Field opsional yang tidak dikirim melalui PUT tidak otomatis dihapus oleh ModelSerializer.
+API ini memakai session login sesuai instruksi tugas. Adanya state autentikasi di server berarti penggunaan pola URL dan method tersebut tidak membuktikan seluruh batasan REST terpenuhi secara ketat.
+
+2. Apa peran serializer dan keuntungannya dibanding JsonResponse manual?
+Serializer mengubah objek menjadi representasi data yang dapat dirender sebagai JSON, serta memvalidasi input sebelum penyimpanan. ModelSerializer membantu menentukan field berdasarkan model dan menyediakan alur create/update.
+EducationSerializer menetapkan field eksplisit, membersihkan judul/deskripsi dengan `strip_tags`, menolak teks kosong setelah dibersihkan, dan menyediakan metadata star read-only. EducationQuerySerializer memvalidasi parameter filter dan pengurutan.
+Dibanding merakit dictionary melalui JsonResponse, serializer memusatkan representasi dan validasi agar lebih mudah digunakan kembali serta diuji. Aturan tersebut tidak perlu dicampur dengan logika setiap view. Sanitasi teks tetap disertai rendering aman di frontend; `strip_tags` sendiri bukan jaminan bebas XSS untuk semua konteks.
+
+3. Apa perbedaan autentikasi dan otorisasi, serta mengapa permission harus diperiksa di server?
+Autentikasi menentukan identitas pengguna. SessionAuthentication mengenali pengguna melalui session login. Otorisasi menentukan tindakan yang boleh dilakukan pengguna tersebut.
+IsPortfolioOwnerOrEditorOrReadOnly mengatur akses tulis Education, sedangkan IsAuthenticated melindungi endpoint star. Menyembunyikan tombol hanya mengatur tampilan: pengguna tetap dapat mengirim request langsung tanpa halaman. Permission server memastikan Editor tidak dapat membuat/menghapus data dan pengguna biasa tidak dapat mengedit data.
+
+4. Mengapa SessionAuthentication membutuhkan CSRF, dan mengapa force_authenticate tidak cukup untuk mengujinya?
+Browser dapat mengirim cookie session secara otomatis. Tanpa perlindungan CSRF, situs lain berpotensi memicu permintaan perubahan data menggunakan session pengguna.
+Permintaan perubahan data menyertakan X-CSRFToken yang diperiksa oleh server. CSRF tidak menggantikan permission karena keduanya memiliki fungsi berbeda.
+force_authenticate menetapkan pengguna langsung untuk pengujian sehingga tidak membuktikan autentikasi session dan pemeriksaan CSRF. Test CSRF menggunakan `APIClient(enforce_csrf_checks=True)` dan `.login()`, lalu memeriksa penolakan tanpa token serta keberhasilan dengan token valid.
+
+#### AI Disclosure dan Evaluasi
+
+Saya menggunakan OpenAI Codex untuk memahami rubrik, membahas konsep, menyusun contoh kode, meninjau perubahan, menjalankan pengujian, serta membantu menyusun draf jawaban reflektif dan dokumentasi ini.
+
+Pada awal pengerjaan, saya menerapkan kode berdasarkan arahan chat. Pada beberapa tahap berikutnya, saya memberikan izin eksplisit agar Codex mengedit file langsung. Bantuan langsung meliputi perbaikan sintaks JavaScript dan template duplikat, penyesuaian test lama, backend filter/sort, test filter/sort, dropdown beserta CSS, dan penulisan dokumentasi.
+
+Strategi prompting dilakukan bertahap: membahas satu bagian, menerapkannya, memeriksa hasil, lalu menyimpan progres menggunakan commit deskriptif pada branch fitur. Perapian manual yang saya lakukan meliputi indentasi dan baris kosong berdasarkan review.
+
+
+#### Ringkasan Log Prompt
+
+Ringkasan berikut merupakan parafrasa permintaan selama pengerjaan, bukan kutipan langsung atau transkrip lengkap percakapan.
+
+- **Analisis kebutuhan dan perencanaan:** Meminta analisis struktur proyek serta pemetaan kebutuhan terhadap rubrik Tugas 6, kemudian menyusun tahapan implementasi dengan penggunaan branch fitur dan commit deskriptif.
+- **Peninjauan implementasi:** Meminta peninjauan perubahan kode sebelum commit untuk memeriksa kesesuaian serializer, endpoint, permission, dan integrasi frontend dengan persyaratan tugas.
+- **Identifikasi dan perbaikan kesalahan:** Meminta pemeriksaan implementasi modal edit dan memberikan izin perbaikan langsung. Perbaikan mencakup sintaks JavaScript, duplikasi template, serta penyesuaian pengujian terhadap endpoint DRF.
+- **Pengembangan fitur tambahan:** Meminta implementasi filter jenjang dan pengurutan pada API, penambahan pengujian otomatis, serta integrasi dropdown pada frontend.

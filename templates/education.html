@@ -40,6 +40,26 @@
                         placeholder="Cari nama institusi"
                         aria-label="Cari pendidikan berdasarkan nama institusi"
                     >
+                    <div class="education-filter-field">
+                        <label for="education-category-filter">Jenjang</label>
+                        <select id="education-category-filter" name="category" class="project-search__input">
+                            <option value="">Semua jenjang</option>
+                            {% for value, label in form.fields.category.choices %}
+                                {% if value %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="education-filter-field">
+                        <label for="education-ordering">Urutan</label>
+                        <select id="education-ordering" name="ordering" class="project-search__input">
+                            <option value="newest">Terbaru ditambahkan</option>
+                            <option value="oldest">Terlama ditambahkan</option>
+                            <option value="title">Nama A–Z</option>
+                            <option value="-title">Nama Z–A</option>
+                        </select>
+                    </div>
                     <button type="submit" class="button">Cari</button>
                 </form>
 

@@ -164,21 +164,6 @@ python manage.py test main
 node --check static/js/education.js
 ```
 
-Node.js hanya diperlukan untuk pemeriksaan sintaks JavaScript di atas. Hasil pengujian otomatis terakhir: 43 test lulus, termasuk 21 test Education API. Test mencakup empat peran, CRUD, validasi, star, CSRF, filter, pengurutan, dan pemeriksaan database setelah penolakan. Database test terpisah dibersihkan otomatis oleh Django.
-
-Pemeriksaan browser yang sudah dilakukan:
-
-- Daftar, pencarian, detail API, filter jenjang, dan urutan nama.
-- Kombinasi pencarian/filter dengan hasil kosong.
-- Tambah dan edit valid sebagai superuser sementara.
-- Penolakan judul yang hanya berisi tag HTML melalui toast, dengan modal edit tetap terbuka.
-
-Pemeriksaan browser yang masih perlu diselesaikan:
-
-- Edit sebagai Editor.
-- Star/unstar dan konfirmasi hapus.
-- Tampilan mobile serta regresi halaman Projects.
-
 #### Pertanyaan Reflektif
 
 1. Apa itu REST, mengapa JSON saja belum cukup, dan apa perbedaan PUT/PATCH?

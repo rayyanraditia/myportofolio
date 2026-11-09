@@ -202,7 +202,7 @@
         if (!button || button.disabled) return;
         const action = button.dataset.action;
         if (!['star', 'delete'].includes(action)) return;
-        if (action === 'delete' && !window.confirm('Yakin ingin menghapus proyek ini?')) return;
+        if (action === 'delete' && !await confirmDeletion('Yakin ingin menghapus proyek ini?')) return;
         button.disabled = true;
         try {
             await writeProject(

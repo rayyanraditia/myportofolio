@@ -65,7 +65,7 @@
 
         if (
             isDelete
-            && !window.confirm("Yakin ingin menghapus pendidikan ini?")
+            && !await confirmDeletion("Yakin ingin menghapus pendidikan ini?")
         ) {
             return;
         }

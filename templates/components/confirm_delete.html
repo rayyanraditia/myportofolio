@@ -1,0 +1,10 @@
+{% load static %}
+<dialog id="confirm-delete" class="confirm-delete" aria-labelledby="confirm-delete-title" aria-describedby="confirm-delete-message">
+    <h2 id="confirm-delete-title">Konfirmasi hapus</h2>
+    <p id="confirm-delete-message"></p>
+    <form method="dialog" class="project-form-modal__actions">
+        <button type="submit" value="cancel" class="button button-secondary" autofocus>Batal</button>
+        <button type="submit" value="confirm" class="button button-danger">Ya, Hapus</button>
+    </form>
+</dialog>
+<script src="{% static 'js/confirm_delete.js' %}"></script>

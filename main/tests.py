@@ -78,12 +78,12 @@ class EducationTest(TestCase):
 
         page = self.client.get(reverse("main:show_education"))
         self.assertContains(page, 'id="education-grid"')
-        self.assertContains(page, reverse("main:get_education_json"))
+        self.assertContains(page, reverse("api:education-list"))
         self.assertContains(page, 'js/education.js')
 
-        response = self.client.get(reverse("main:get_education_json"))
+        response = self.client.get(reverse("api:education-list"))
         self.assertEqual(response.status_code, 200)
-        records = {item["pk"]: item["fields"] for item in response.json()}
+        records = {item["id"]: item for item in response.json()}
         self.assertEqual(len(records), 2)
         for education in (university, school):
             with self.subTest(title=education.title):
@@ -96,6 +96,6 @@ class EducationTest(TestCase):
         page = self.client.get(reverse("main:show_education"))
         self.assertContains(page, 'id="education-empty"')
         self.assertContains(page, 'id="education-empty-message"')
-        response = self.client.get(reverse("main:get_education_json"))
+        response = self.client.get(reverse("api:education-list"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])

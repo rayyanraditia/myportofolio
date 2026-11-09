@@ -112,13 +112,14 @@
                     {% endif %}
 
                     {% if user.is_superuser or is_editor %}
-                        <a
+                        <button
+                            type="button"
                             class="button button-secondary"
                             data-action="edit"
-                            data-url-template="{% url 'main:update_education' '00000000-0000-0000-0000-000000000000' %}"
+                            data-url-template="{% url 'api:education-detail' '00000000-0000-0000-0000-000000000000' %}"
                         >
                             Edit
-                        </a>
+                        </button>
                     {% endif %}
 
                     {% if user.is_superuser %}
@@ -142,6 +143,10 @@
 
     {% if user.is_superuser %}
         {% include "components/education_form_modal.html" %}
+    {% endif %}
+
+    {% if user.is_superuser or is_editor %}
+        {% include "components/education_edit_modal.html" %}
     {% endif %}
 
     <script src="{% static 'js/education.js' %}" defer></script>

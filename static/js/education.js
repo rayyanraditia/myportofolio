@@ -12,6 +12,8 @@
     const emptyMessage = document.getElementById("education-empty-message");
     const educationForm = document.getElementById("education-form");
     const educationModal = document.getElementById("add-education-modal");
+    const editForm = document.getElementById("education-edit-form");
+    const editModal = document.getElementById("edit-education-modal");
 
     const states = {
         loading: document.getElementById("education-loading"),
@@ -164,6 +166,8 @@
 
             if (element.tagName === "FORM") {
                 element.action = url;
+            } else if (element.tagName === "BUTTON") {
+                element.dataset.endpoint = url;
             } else {
                 element.href = url;
             }
@@ -182,6 +186,28 @@
         if (deleteForm) {
             deleteForm.addEventListener("submit", (event) => {
                 submitEducationAction(event, "DELETE");
+            });
+        }
+
+        const editButton = card.querySelector("[data-action='edit']");
+
+        if (editButton && editForm && editModal) {
+            editButton.addEventListener("click", () => {
+                if (editForm.getAttribute("aria-busy") === "true") return;
+
+                editForm.action = editButton.dataset.endpoint;
+
+                for (const name of [
+                    "title",
+                    "description",
+                    "category",
+                    "thumbnail",
+                ]) {
+                    editForm.elements.namedItem(name).value = education[name] ?? "";
+                }
+
+                editModal.showPopover();
+                editForm.elements.namedItem("title").focus();
             });
         }
 
@@ -264,14 +290,14 @@
         }
     }
 
-    function getValidationMessage(result, status) {
+    function getValidationMessage(result, status, form = educationForm) {
         if (typeof result.detail === "string") {
             return result.detail;
         }
 
         const messages = Object.entries(result).flatMap(
             ([fieldName, errors]) => {
-                const field = educationForm?.elements.namedItem(fieldName);
+                const field = form?.elements.namedItem(fieldName);
                 const label = field?.labels?.[0]?.textContent.trim();
 
                 const values = Array.isArray(errors) ? errors : [errors];
@@ -285,6 +311,71 @@
         );
 
         return messages.join(" ") || `Permintaan gagal (HTTP ${status}).`;
+    }
+
+    async function editEducation(event) {
+        event.preventDefault();
+
+        const button = editForm.querySelector("button[type='submit']");
+        if (button.disabled) return;
+
+        button.disabled = true;
+        button.textContent = "Menyimpan...";
+        editForm.setAttribute("aria-busy", "true");
+
+        try {
+            const csrfToken = editForm.querySelector(
+                "[name='csrfmiddlewaretoken']",
+            ).value;
+
+            const response = await fetch(editForm.action, {
+                method: "PATCH",
+                headers: {
+                    Accept: "application/json",
+                    "X-CSRFToken": csrfToken,
+                },
+                body: new FormData(editForm),
+            });
+
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                showToast(
+                    "Gagal mengubah pendidikan",
+                    getValidationMessage(result, response.status, editForm),
+                    "error",
+                    6000,
+                );
+                return;
+            }
+
+            if (editModal.matches(":popover-open")) {
+                editModal.hidePopover();
+            }
+
+            showToast(
+                "Berhasil",
+                "Pendidikan berhasil diperbarui.",
+                "success",
+            );
+
+            window.clearTimeout(debounceTimer);
+            await fetchEducation();
+        } catch (error) {
+            console.error("Gagal mengedit Education:", error);
+
+            showToast(
+                "Koneksi bermasalah",
+                "Status penyimpanan belum dapat dipastikan. "
+                    + "Periksa daftar sebelum mencoba kembali.",
+                "error",
+                6000,
+            );
+        } finally {
+            button.disabled = false;
+            button.textContent = "Simpan Perubahan";
+            editForm.removeAttribute("aria-busy");
+        }
     }
 
     async function addEducation(event) {
@@ -384,6 +475,8 @@
     if (educationForm && educationModal) {
         educationForm.addEventListener("submit", addEducation);
     }
-
+    if (editForm && editModal) {
+        editForm.addEventListener("submit", editEducation);
+    }
     fetchEducation();
 })();

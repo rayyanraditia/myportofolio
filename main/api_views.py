@@ -14,7 +14,11 @@ from main.permissions import (
     IsPortfolioOwnerOrEditorOrReadOnly,
     IsPortfolioOwnerOrReadOnly,
 )
-from main.serializers import EducationSerializer, ProjectSerializer
+from main.serializers import (
+    EducationQuerySerializer,
+    EducationSerializer,
+    ProjectSerializer,
+)
 
 
 @api_view(["GET", "HEAD", "POST"])
@@ -105,17 +109,31 @@ def project_star(request, project_id):
 def education_list(request):
     """List searchable education records or create one as the owner."""
     if request.method in ("GET", "HEAD"):
-        education_list = (
-            Education.objects
-            .prefetch_related("starred_by")
-            .order_by("-started_at", "id")
-        )
+        query_serializer = EducationQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+        filters = query_serializer.validated_data
 
-        title = request.query_params.get("title", "").strip()
-        if title:
+        education_list = Education.objects.prefetch_related("starred_by")
+
+        if filters["title"]:
             education_list = education_list.filter(
-                title__icontains=title,
+                title__icontains=filters["title"],
             )
+        if filters["category"]:
+            education_list = education_list.filter(
+                category=filters["category"],
+            )
+
+        ordering_options = {
+            "newest": "-started_at",
+            "oldest": "started_at",
+            "title": "title",
+            "-title": "-title",
+        }
+        education_list = education_list.order_by(
+            ordering_options[filters["ordering"]],
+            "id",
+        )
 
         serializer = EducationSerializer(
             education_list,

@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 from django.contrib.auth.models import Group, User
 from django.urls import reverse
@@ -652,3 +653,61 @@ class EducationAPITest(APITestCase):
                 self.assertTrue(
                     self.education.starred_by.filter(pk=user.pk).exists()
                 )
+
+    def test_category_filter_can_be_combined_with_search(self):
+        school = Education.objects.create(
+            title="SMA Indonesia",
+            description="Pendidikan menengah",
+            category="senior high school",
+        )
+        cases = [
+            ({"category": "senior high school"}, [school]),
+            ({"title": "INDONESIA", "category": "university"}, [self.education]),
+            ({"title": "SMA", "category": "university"}, []),
+        ]
+        for params, expected in cases:
+            with self.subTest(params=params):
+                response = self.client.get(self.list_url, params)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(
+                    [item["id"] for item in response.data],
+                    [str(item.pk) for item in expected],
+                )
+
+    def test_supported_ordering_and_default_order(self):
+        earlier = Education.objects.create(
+            title="Akademi Contoh",
+            description="Pendidikan sebelumnya",
+            category="university",
+        )
+        # Explicit dates keep the test independent of execution timing.
+        Education.objects.filter(pk=earlier.pk).update(
+            started_at=self.education.started_at - timedelta(days=1),
+        )
+        cases = [
+            ({}, [self.education, earlier]),
+            ({"ordering": "newest"}, [self.education, earlier]),
+            ({"ordering": "oldest"}, [earlier, self.education]),
+            ({"ordering": "title"}, [earlier, self.education]),
+            ({"ordering": "-title"}, [self.education, earlier]),
+        ]
+        for params, expected in cases:
+            with self.subTest(params=params):
+                response = self.client.get(self.list_url, params)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(
+                    [item["id"] for item in response.data],
+                    [str(item.pk) for item in expected],
+                )
+
+    def test_invalid_query_parameters_return_400_without_changes(self):
+        before = self.database_snapshot()
+        for params, field in [
+            ({"category": "invalid-category"}, "category"),
+            ({"ordering": "invalid-order"}, "ordering"),
+        ]:
+            with self.subTest(params=params):
+                response = self.client.get(self.list_url, params)
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(field, response.data)
+                self.assertEqual(self.database_snapshot(), before)

@@ -45,13 +45,15 @@ class ProjectAPITest(APITestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
     def test_guest_and_visitor_cannot_write(self):
-        for user in (None, self.visitor):
+        # Guests get 401 (TokenAuthentication asks for credentials),
+        # logged-in non-owners get 403 (authenticated but not allowed).
+        for user, expected in ((None, 401), (self.visitor, 403)):
             self.client.force_authenticate(user=user)
             with self.subTest(user=user):
-                self.assertEqual(self.client.post(self.list_url, self.payload, format='json').status_code, 403)
+                self.assertEqual(self.client.post(self.list_url, self.payload, format='json').status_code, expected)
                 for method in ('put', 'patch', 'delete'):
                     response = getattr(self.client, method)(self.detail_url, self.payload, format='json')
-                    self.assertEqual(response.status_code, 403)
+                    self.assertEqual(response.status_code, expected)
         self.project.refresh_from_db()
         self.assertEqual(self.project.title, 'Portfolio')
         self.assertEqual(Project.objects.count(), 1)
@@ -92,7 +94,7 @@ class ProjectAPITest(APITestCase):
         self.assertFalse(Project.objects.filter(pk=self.project.pk).exists())
 
     def test_star_requires_login_and_toggles(self):
-        self.assertEqual(self.client.post(self.star_url).status_code, 403)
+        self.assertEqual(self.client.post(self.star_url).status_code, 401)
         self.client.force_authenticate(user=self.visitor)
         response = self.client.post(self.star_url, {'user_id': self.owner.pk}, format='json')
         self.assertEqual(response.status_code, 200)
@@ -276,7 +278,8 @@ class EducationAPITest(APITestCase):
     def test_guest_and_regular_user_cannot_write(self):
         before = self.database_snapshot()
 
-        for user in (None, self.visitor):
+        # Guests get 401 (no credentials); regular users get 403.
+        for user, expected in ((None, 401), (self.visitor, 403)):
             self.client.force_authenticate(user=user)
 
             with self.subTest(user=user, method="post"):
@@ -285,7 +288,7 @@ class EducationAPITest(APITestCase):
                     self.payload,
                     format="json",
                 )
-                self.assertEqual(response.status_code, 403)
+                self.assertEqual(response.status_code, expected)
                 self.assertEqual(self.database_snapshot(), before)
 
             for method in ("put", "patch", "delete"):
@@ -295,7 +298,7 @@ class EducationAPITest(APITestCase):
                         self.payload,
                         format="json",
                     )
-                    self.assertEqual(response.status_code, 403)
+                    self.assertEqual(response.status_code, expected)
                     self.assertEqual(self.database_snapshot(), before)
 
     def test_editor_can_patch_and_put_but_not_create_or_delete(self):
@@ -458,7 +461,7 @@ class EducationAPITest(APITestCase):
 
         response = self.client.post(self.star_url)
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
         self.assertEqual(self.database_snapshot(), before)
 
     def test_authenticated_roles_can_toggle_their_own_star(self):
@@ -711,3 +714,86 @@ class EducationAPITest(APITestCase):
                 self.assertEqual(response.status_code, 400)
                 self.assertIn(field, response.data)
                 self.assertEqual(self.database_snapshot(), before)
+
+
+class TokenAuthAPITest(APITestCase):
+    """Token login/logout used by the Flutter mobile client (Tutorial 10)."""
+
+    def setUp(self):
+        self.owner = User.objects.create_superuser(
+            'owner', 'owner@example.com', 'test-password',
+        )
+        self.token_url = reverse('api:api-token-auth')
+        self.logout_url = reverse('api:api-logout')
+        self.list_url = reverse('api:project-list')
+        self.payload = {
+            'title': 'Mobile project',
+            'description': 'Created from Flutter',
+            'tech_stack': 'Flutter, Django',
+            'project_url': 'https://example.com/',
+            'project_image_url': '',
+        }
+
+    def obtain_token(self):
+        response = self.client.post(
+            self.token_url,
+            {'username': 'owner', 'password': 'test-password'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        return response.data['token']
+
+    def test_obtain_token_with_valid_and_invalid_credentials(self):
+        self.assertTrue(self.obtain_token())
+
+        response = self.client.post(
+            self.token_url,
+            {'username': 'owner', 'password': 'wrong-password'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn('token', response.data)
+
+    def test_token_allows_owner_to_create_project(self):
+        token = self.obtain_token()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+
+        response = self.client.post(self.list_url, self.payload, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(Project.objects.filter(title='Mobile project').exists())
+
+    def test_missing_or_invalid_token_returns_401(self):
+        response = self.client.post(self.list_url, self.payload, format='json')
+        self.assertEqual(response.status_code, 401)
+
+        self.client.credentials(HTTP_AUTHORIZATION='Token invalid-token')
+        response = self.client.post(self.list_url, self.payload, format='json')
+        self.assertEqual(response.status_code, 401)
+        self.assertFalse(Project.objects.exists())
+
+    def test_public_list_does_not_need_token(self):
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_logout_revokes_token(self):
+        token = self.obtain_token()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+
+        response = self.client.post(self.logout_url)
+        self.assertEqual(response.status_code, 204)
+
+        response = self.client.post(self.list_url, self.payload, format='json')
+        self.assertEqual(response.status_code, 401)
+
+    def test_logout_requires_authentication(self):
+        response = self.client.post(self.logout_url)
+        self.assertEqual(response.status_code, 401)
+
+    def test_cors_header_allows_local_flutter_web(self):
+        response = self.client.get(
+            self.list_url,
+            HTTP_ORIGIN='http://localhost:54321',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Access-Control-Allow-Origin'], '*')

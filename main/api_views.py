@@ -1,11 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.authentication import SessionAuthentication
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -22,7 +17,6 @@ from main.serializers import (
 
 
 @api_view(["GET", "HEAD", "POST"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsPortfolioOwnerOrReadOnly])
 def project_list(request):
     if request.method in ("GET", "HEAD"):
@@ -56,7 +50,6 @@ def project_list(request):
     )
 
 @api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsPortfolioOwnerOrReadOnly])
 def project_detail(request, project_id):
     project = get_object_or_404(
@@ -87,7 +80,6 @@ def project_detail(request, project_id):
     return Response(serializer.data)
 
 @api_view(["POST"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def project_star(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
@@ -104,7 +96,6 @@ def project_star(request, project_id):
     return Response(serializer.data)
 
 @api_view(["GET", "HEAD", "POST"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
 def education_list(request):
     """List searchable education records or create one as the owner."""
@@ -156,7 +147,6 @@ def education_list(request):
 
 
 @api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
 def education_detail(request, education_id):
     """Read, update, or delete education according to the user's role."""
@@ -189,7 +179,6 @@ def education_detail(request, education_id):
 
 
 @api_view(["POST"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def education_star(request, education_id):
     """Toggle a star for the authenticated user, ignoring client identity."""
@@ -218,3 +207,12 @@ def education_star(request, education_id):
         context={"request": request},
     )
     return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def api_logout(request):
+    """Revoke the caller's API token so it can no longer be used."""
+    if request.auth is not None:
+        request.auth.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)

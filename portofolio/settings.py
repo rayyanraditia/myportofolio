@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "rayyan-raditia-myportofolio.pws.cs.ui.ac.id"]
+# 10.0.2.2 adalah alamat komputer host jika diakses dari emulator Android.
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "10.0.2.2", "rayyan-raditia-myportofolio.pws.cs.ui.ac.id"]
 
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 
@@ -44,11 +45,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'main',
     'rest_framework',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
+    # CorsMiddleware harus berada sebelum CommonMiddleware agar header CORS
+    # ikut ditambahkan pada setiap response.
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -137,3 +143,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # gunakan https:// untuk trailing urlnya
 CSRF_TRUSTED_ORIGINS = ["https://rayyan-raditia-myportofolio.pws.cs.ui.ac.id"]
+
+# Django REST Framework
+# TokenAuthentication diletakkan pertama agar klien mobile memakai header
+# `Authorization: Token <key>` dan menerima 401 saat token tidak ada atau
+# tidak valid, sedangkan halaman web tetap memakai session.
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
+
+# CORS untuk Flutter Web (Chrome) saat pengembangan lokal.
+# Semua origin diizinkan secara lokal (PRODUCTION=False). Di production,
+# hanya origin pada CORS_ALLOWED_ORIGINS (dipisah koma) yang diizinkan.
+CORS_ALLOW_ALL_ORIGINS = not PRODUCTION
+if PRODUCTION:
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
